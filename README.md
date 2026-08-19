@@ -1,4 +1,4 @@
-# Kubernetes Microsegmentation and Attack Path Visualizer (k8s-pathfinder)
+# Kubernetes Microseguimentação e Vizualizador Caminhos de Ataque (k8s-pathfinder)
 
 Uma ferramenta de análise e visualização de segurança projetada para avaliar a postura de clusters Kubernetes, descobrir vetores de movimentação lateral, calcular grafos de caminhos de ataque (attack paths) com múltiplos saltos visando o Master Node e simular políticas de microssegmentação.
 
