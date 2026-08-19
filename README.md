@@ -1,82 +1,83 @@
-# Kubernetes Microsegmentation and Attack Path Visualizer
+# Kubernetes Microsegmentation and Attack Path Visualizer (k8s-pathfinder)
 
-A security analysis and visualization tool designed to evaluate Kubernetes cluster posture, discover lateral movement vectors, compute multi-hop attack graphs targeting the Master Node, and simulate microsegmentation policies.
+Uma ferramenta de análise e visualização de segurança projetada para avaliar a postura de clusters Kubernetes, descobrir vetores de movimentação lateral, calcular grafos de caminhos de ataque (attack paths) com múltiplos saltos visando o Master Node e simular políticas de microssegmentação.
 
-## Overview
+## Visão Geral
 
-In modern containerized environments, flat network topologies and permissive Role-Based Access Control (RBAC) configurations frequently allow internal threat actors or compromised pods to escalate privileges and compromise the control plane (Master Node). 
+Em ambientes modernos de contêineres, topologias de rede planas e configurações permissivas de RBAC (Role-Based Access Control) frequentemente permitem que atacantes internos ou pods comprometidos escalem privilégios e tomem o controle do control plane (Master Node).
 
-This project statically and dynamically analyzes Kubernetes manifests, API server permissions, and network policies to:
-1. Parse Kubernetes cluster configurations and runtime state.
-2. Construct a directed graph representing entities (Pods, ServiceAccounts, Roles, ClusterRoles, Nodes, Secrets) and their relationships.
-3. Compute feasible attack paths leading to cluster takeover.
-4. Simulate and validate microsegmentation rules to enforce the principle of least privilege.
+Este projeto analisa de forma estática e dinâmica manifestos Kubernetes, permissões da API server e políticas de rede para:
+1. Analisar configurações e o estado de execução do cluster Kubernetes.
+2. Construir um grafo direcionado representando entidades (Pods, ServiceAccounts, Roles, ClusterRoles, Nodes, Secrets) e seus relacionamentos.
+3. Calcular caminhos de ataque viáveis que levam ao comprometimento do cluster.
+4. Simular e validar regras de microssegmentação para aplicar o princípio do menor privilégio (*least privilege*).
 
 ---
 
-## Core Architecture
+## Arquitetura Principal
 
 ```
 +------------------------------------------------------------+
-|                      Input Sources                         |
-|   (K8s Manifests YAMLs / Live API Server / RBAC / NetPol)   |
+|                     Fontes de Entrada                      |
+|   (Manifestos YAMLs K8s / API Server / RBAC / NetPol)      |
 +-----------------------------+------------------------------+
                               |
                               v
 +------------------------------------------------------------+
-|                    Graph Engine & Parser                   |
-|     - Entities: Pod, ServiceAccount, Role, Node, Secret    |
-|     - Edges: EXEC_EXEC, TOKEN_MOUNT, RBAC_BIND, NET_ACCESS  |
+|                  Motor de Grafos e Parser                  |
+|     - Entidades: Pod, ServiceAccount, Role, Node, Secret   |
+|     - Arestas: EXEC_EXEC, TOKEN_MOUNT, RBAC_BIND, NET_ACC  |
 +-----------------------------+------------------------------+
                               |
         +---------------------+---------------------+
         |                                           |
         v                                           v
 +-------------------------------+           +-------------------------------+
-|     Attack Path Analyzer      |           |  Microsegmentation Simulator  |
-| - Dijkstra / Shortest Path    |           | - NetworkPolicy Enforcement   |
-| - Privilege Escalation Matrix |           | - Isolation Verification      |
+|     Analisador de Ataque      |           | Simulador de Microssegmentação|
+| - Dijkstra / Menor Caminho    |           | - Aplicação de NetworkPolicy  |
+| - Matriz de Escalação Priv.   |           | - Verificação de Isolamento   |
 +-------------------------------+           +-------------------------------+
         |                                           |
         +---------------------+---------------------+
                               |
                               v
 +------------------------------------------------------------+
-|                    Output & Reporting                      |
-|       - CLI Report Output / JSON Graph Export / UI         |
+|                    Saída e Relatórios                      |
+|     - Relatório CLI / Exportação JSON / Interface Web      |
 +------------------------------------------------------------+
 ```
 
 ---
 
-## Key Features
+## Principais Funcionalidades
 
-- **Automated RBAC and Service Account Mapping**: Identifies over-privileged Roles and ClusterRoles bound to default or vulnerable ServiceAccounts.
-- **Attack Graph Generation**: Models lateral movement scenarios including container escape vectors, credential harvesting from mounted secrets, and excessive API permissions (`create pods/exec`, `bind`, `impersonate`).
-- **Microsegmentation Policy Evaluator**: Tests current namespace isolation and NetworkPolicies to detect segmentation gaps and lateral traffic leakage.
-- **Master Node Compromise Scoring**: Calculates a deterministic risk score for every entry point based on privilege depth and path length to control plane access.
-
----
-
-## Tech Stack
-
-- **Language**: Python 3.10+ / Go (Modular parsing components)
-- **Graph Processing**: NetworkX
-- **Kubernetes SDK**: `kubernetes` python client / YAML parsers (`PyYAML`)
-- **Interface**: CLI with structured JSON / HTML export options
+- **Mapeamento Automatizado de RBAC e Service Accounts**: Identifica Roles e ClusterRoles excessivamente permissivas associadas a ServiceAccounts padrão ou vulneráveis.
+- **Geração de Grafos de Ataque**: Modela cenários de movimentação lateral, incluindo vetores de escape de contêiner, coleta de credenciais de secrets montadas e permissões excessivas na API (`create pods/exec`, `bind`, `impersonate`).
+- **Avaliador de Políticas de Microssegmentação**: Testa o isolamento atual de namespaces e NetworkPolicies para detectar falhas de segmentação e vazamento de tráfego lateral.
+- **Pontuação de Risco de Comprometimento do Master Node**: Calcula uma pontuação de risco determinística para cada ponto de entrada com base na profundidade de privilégios e extensão do caminho até o control plane.
 
 ---
 
-## Installation & Setup
+## Tecnologias Utilizadas
 
-### Prerequisites
-- Python 3.10 or higher
-- Access to a Kubernetes cluster (minikube, kind, or remote test cluster) or a directory containing Kubernetes deployment manifests.
+- **Linguagem**: Python 3.10+
+- **Processamento de Grafos**: NetworkX
+- **Backend / API**: FastAPI, Uvicorn
+- **SDK Kubernetes**: `kubernetes` python client / Parsers YAML (`PyYAML`)
+- **Interface Visual**: Frontend interativo com Cytoscape.js
 
-### Clone and Install Dependencies
+---
+
+## Instalação e Configuração
+
+### Pré-requisitos
+- Python 3.10 ou superior
+- Acesso a um cluster Kubernetes (minikube, kind ou cluster remoto) ou um diretório contendo manifestos de implantação do Kubernetes.
+
+### Clonar e Instalar Dependências
 ```bash
-git clone https://github.com/your-username/k8s-attack-path-visualizer.git
-cd k8s-attack-path-visualizer
+git clone https://github.com/fhbertho/k8s-pathfinder.git
+cd k8s-pathfinder
 
 python3 -m venv venv
 source venv/bin/activate
@@ -85,59 +86,55 @@ pip install -r requirements.txt
 
 ---
 
-## Usage
+## Como Usar
 
-### 1. Analyzing Static Manifests
-Scan a directory containing Kubernetes manifest files to map potential privilege escalation and network exposure:
+### 1. Executar a Aplicação Web
+Inicie o servidor backend FastAPI com interface interativa:
 ```bash
-python main.py analyze --manifests /path/to/k8s/manifests/ --output report.json
+cd backend
+python3 main.py
 ```
+Acesse a interface no seu navegador em: `http://localhost:8000`
 
-### 2. Analyzing a Live Cluster (Kubeconfig)
-Connect directly to a target cluster using your current context to evaluate real-time RBAC and topology:
-```bash
-python main.py scan --kubeconfig ~/.kube/config --target-namespace default
-```
+### 2. Análise de Manifestos Estáticos
+Envie ou aponte arquivos de manifesto YAML do Kubernetes para mapear potenciais escalações de privilégio e exposição de rede.
 
-### 3. Simulating Microsegmentation Remediation
-Test proposed NetworkPolicies against the computed attack graph to verify closure of lateral movement channels:
-```bash
-python main.py simulate --graph report.json --policies /path/to/policies/
-```
+### 3. Simulação e Remediação de Microssegmentação
+Gere e teste NetworkPolicies sugeridas com base no grafo de ataque calculado para bloquear canais de movimentação lateral.
 
 ---
 
-## Example Output
+## Exemplo de Saída
 
 ```text
-[INFO] Initializing K8s Cluster Security Audit...
-[INFO] Loaded 42 Pods, 14 ServiceAccounts, 8 ClusterRoles, 3 NetworkPolicies.
-[WARN] Vulnerability Found: ServiceAccount 'default:ci-runner' bound to ClusterRole 'cluster-admin' via RoleBinding.
-[WARN] Attack Path Discovered:
+[INFO] Inicializando Auditoria de Segurança do Cluster K8s...
+[INFO] Carregados 42 Pods, 14 ServiceAccounts, 8 ClusterRoles, 3 NetworkPolicies.
+[WARN] Vulnerabilidade Encontrada: ServiceAccount 'default:ci-runner' associada à ClusterRole 'cluster-admin' via RoleBinding.
+[WARN] Caminho de Ataque Descoberto:
   [Pod: web-app-pod] 
-    --> (Token Mount / Secret Extraction) 
+    --> (Montagem de Token / Extração de Secret) 
   [ServiceAccount: ci-runner] 
     --> (RBAC ClusterRoleBinding: cluster-admin) 
-  [Target: Master Node / API Server Control Plane]
-[SUMMARY] Risk Score: CRITICAL (Path Length: 2 hops)
+  [Alvo: Master Node / Control Plane API Server]
+[SUMMARY] Nível de Risco: CRÍTICO (Tamanho do Caminho: 2 saltos)
 ```
 
 ---
 
 ## Roadmap
 
-- [ ] Implementation of eBPF-based runtime traffic discovery to supplement static topology mapping.
-- [ ] Integration with OPA / Gatekeeper to automatically generate remediation policies.
-- [ ] Web-based UI dashboard using Cytoscape.js for interactive attack graph exploration.
+- [ ] Implementação de descoberta de tráfego em tempo de execução baseada em eBPF para complementar o mapeamento estático.
+- [ ] Integração com OPA / Gatekeeper para gerar automaticamente políticas de remediação.
+- [ ] Melhorias no painel interativo Cytoscape.js para filtros avançados de busca de caminhos.
 
 ---
 
-## Contributing
+## Contribuição
 
-Contributions, issues, and feature requests are welcome. Please open an issue or submit a pull request for review.
+Contribuições, sugestões e relatórios de problemas são muito bem-vindos. Sinta-se à vontade para abrir uma *issue* ou enviar um *pull request*.
 
 ---
 
-## License
+## Licença
 
-Distributed under the MIT License. See `LICENSE` for more information.
+Distribuído sob a licença GPL-3.0. Consulte o arquivo `LICENSE` para mais informações.
